@@ -1,4 +1,7 @@
-import { useFindings, useNearby, useSearch } from "./app";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { useState } from "react";
+
+import { createQueryClient, useFindings, useNearby, useSearch } from "./app";
 import type { ActiveFindingsState, FindingsState, Navigate } from "./app";
 import type { Catalog } from "./catalog";
 import { treeNumberOf } from "./search";
@@ -55,7 +58,7 @@ function Content(props: {
   return <ListView state={state} search={search} {...actions} />;
 }
 
-export function Baumkataster({ catalog }: { readonly catalog: Catalog }) {
+function BaumkatasterContent({ catalog }: { readonly catalog: Catalog }) {
   const { search, navigate, back } = useSearch();
   const { state, retry } = useFindings(catalog, search);
   const { device, following, locate, stop } = useNearby(search, navigate);
@@ -107,5 +110,14 @@ export function Baumkataster({ catalog }: { readonly catalog: Catalog }) {
         </p>
       </footer>
     </div>
+  );
+}
+
+export function Baumkataster({ catalog }: { readonly catalog: Catalog }) {
+  const [client] = useState(createQueryClient);
+  return (
+    <QueryClientProvider client={client}>
+      <BaumkatasterContent catalog={catalog} />
+    </QueryClientProvider>
   );
 }

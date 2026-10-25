@@ -4,3 +4,4 @@ export type { ActiveFindingsState, FindingsState } from "./use-findings.ts";
 export { useNearby } from "./use-nearby.ts";
 export { useSearch } from "./use-search.ts";
 export type { HistoryMode, Navigate } from "./use-search.ts";
+export { createQueryClient } from "./query-client.ts";
