@@ -11,7 +11,8 @@ const root = document.querySelector("#root");
 if (root === null) throw new Error("index.html is missing #root");
 
 const catalog = createCatalog({
-  baseUrl: import.meta.env.VITE_OGD_BASE_URL ?? "/ogd",
+  baseUrl:
+    import.meta.env.VITE_OGD_BASE_URL ?? (import.meta.env.DEV ? "/ogd" : "https://data.wien.gv.at"),
   fetch: (input, init) => fetch(input, init),
 });
 

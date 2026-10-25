@@ -8,6 +8,7 @@ const wienOgd = {
 };
 
 export default defineConfig({
+  base: "./",
   plugins: [react()],
   server: { proxy: { "/ogd": wienOgd } },
   preview: { proxy: { "/ogd": wienOgd } },
