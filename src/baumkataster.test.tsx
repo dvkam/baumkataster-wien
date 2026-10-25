@@ -73,6 +73,17 @@ afterEach(() => {
 });
 
 describe("Baumkataster", () => {
+  it("retries an empty response instead of reusing its cached result", async () => {
+    const fetch = vi
+      .fn<Fetch>()
+      .mockResolvedValueOnce(Response.json(rawCollection([])))
+      .mockResolvedValueOnce(Response.json(rawCollection([spitzahorn])));
+    const { user } = open("/?nummer=1026", fetch);
+    await user.click(await screen.findByRole("button", { name: "Erneut versuchen" }));
+    expect(await screen.findByText("1 Baum mit Nr. 1026")).toBeDefined();
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
   it("starts with an introduction and asks nothing of the WFS", () => {
     const { fetch } = open("/");
     expect(screen.getByRole("heading", { name: "Welcher Baum ist das?" })).toBeDefined();

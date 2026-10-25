@@ -105,8 +105,13 @@ export function useFindings(
   }, [catalog, search, attempt, needsLookup]);
 
   const retry = useCallback(() => {
+    setAnswers((previous) => {
+      const ready = new Map(previous.ready);
+      ready.delete(keyOf(search));
+      return { ...previous, ready };
+    });
     setAttempt((previous) => previous + 1);
-  }, []);
+  }, [search]);
 
   return { state, retry };
 }

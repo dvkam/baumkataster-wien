@@ -23,7 +23,7 @@ function summary(search: ActiveSearch, count: number): string {
       return `${trees} mit Nr. ${search.treeNumber}`;
     }
     case "tree": {
-      return count === 0 ? "Diesen Baum gibt es im Baumkataster nicht mehr." : "";
+      return count === 0 ? "Für diesen Baum liefert der Baumkataster gerade keinen Eintrag." : "";
     }
     default: {
       const exhaustive: never = search;
@@ -33,6 +33,8 @@ function summary(search: ActiveSearch, count: number): string {
 }
 
 function note(search: ActiveSearch, count: number, truncated: boolean): string | null {
+  if (count === 0)
+    return "Prüfe die Suche oder versuche es später erneut. Auch der Datendienst kann vorübergehend leere Ergebnisse liefern.";
   if (truncated) return "Sehr viele Treffer: die Liste ist unvollständig.";
   if (search.kind === "treeNumber" && count > 1) {
     return "Baumnummern wiederholen sich in Wien. Mit „In meiner Nähe“ siehst du nur die Bäume um dich.";
@@ -76,6 +78,11 @@ export function StatusLine({ search, state, retry }: StatusLineProps) {
         {text}
       </span>
       {detail === null ? null : <span className="status-note">{detail}</span>}
+      {state.kind === "ready" && state.findings.items.length === 0 ? (
+        <button type="button" className="button button-quiet pressable" onClick={retry}>
+          Erneut versuchen
+        </button>
+      ) : null}
     </output>
   );
 }
