@@ -53,7 +53,13 @@ export const TREE_SOURCE = {
 
 const point = z.object({
   type: z.literal("Point"),
-  coordinates: z.tuple([z.number(), z.number()], z.number()),
+  coordinates: z.tuple(
+    [
+      z.number().check(z.minimum(-180), z.maximum(180)),
+      z.number().check(z.minimum(-90), z.maximum(90)),
+    ],
+    z.number(),
+  ),
 });
 
 const treeFeature = z.object({

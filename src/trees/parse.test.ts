@@ -10,6 +10,17 @@ const parseOne = (properties: Parameters<typeof rawTree>[0]) => {
 };
 
 describe("parseTreeCollection", () => {
+  it.each([
+    [181, 48],
+    [16, 91],
+    [-181, 48],
+    [16, -91],
+  ])("rejects coordinates outside geographic bounds: %j", (longitude, latitude) => {
+    expect(() => parseTreeCollection(rawCollection([rawTree({}, [longitude, latitude])]))).toThrow(
+      TreeFormatError,
+    );
+  });
+
   it("reads a Baumkataster feature into a Tree", () => {
     const tree = parseOne({
       OBJECTID: 4711,
