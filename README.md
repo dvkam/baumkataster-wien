@@ -4,6 +4,8 @@ Find trees in Vienna by the number on their tag or by location. The app shows sp
 
 [Source code](https://github.com/dvkam/baumkataster-wien)
 
+[Try the live app](https://dvkam.github.io/baumkataster-wien/)
+
 The interface is in German. It uses React and queries Vienna's public WFS directly. No database, API key or application backend is required.
 
 ## Start locally
@@ -104,6 +106,8 @@ Remove-Item Env:VITE_LIVE_WFS
 The live test checks nearby, number and object ID lookups with the same parser as the app. Empty upstream results fail the test. Ordinary CI keeps this test disabled so an upstream outage does not block unrelated changes.
 
 ## Hosting
+
+GitHub Pages hosts the app at https://dvkam.github.io/baumkataster-wien/. Every push to `main` runs the checks and production build, then deploys `dist/` after they pass. Pull requests run checks without deploying. The `CI and Pages` workflow also supports manual deployment from GitHub Actions.
 
 `npm run build` produces static files in `dist/`. Upload that directory to a static HTTPS host. Relative asset paths support hosting under a repository subdirectory.
 
