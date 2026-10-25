@@ -1,0 +1,24 @@
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+
+import { Baumkataster } from "./baumkataster.tsx";
+import { createCatalog } from "./catalog";
+import { ErrorBoundary } from "./ui";
+
+import "./styles.css";
+
+const root = document.querySelector("#root");
+if (root === null) throw new Error("index.html is missing #root");
+
+const catalog = createCatalog({
+  baseUrl: import.meta.env.VITE_OGD_BASE_URL ?? "/ogd",
+  fetch: (input, init) => fetch(input, init),
+});
+
+createRoot(root).render(
+  <StrictMode>
+    <ErrorBoundary>
+      <Baumkataster catalog={catalog} />
+    </ErrorBoundary>
+  </StrictMode>,
+);
