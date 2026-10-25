@@ -6,7 +6,11 @@ Produced with pstack's **architect** process (usage first, design it twice, scre
 
 ```tsx
 // main.tsx: the only place that knows where the WFS lives
-const catalog = createCatalog({ baseUrl: import.meta.env.VITE_OGD_BASE_URL ?? "/ogd", fetch });
+const catalog = createCatalog({
+  baseUrl:
+    import.meta.env.VITE_OGD_BASE_URL ?? (import.meta.env.DEV ? "/ogd" : "https://data.wien.gv.at"),
+  fetch,
+});
 createRoot(root).render(
   <ErrorBoundary>
     <Baumkataster catalog={catalog} />

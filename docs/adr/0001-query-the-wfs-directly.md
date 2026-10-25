@@ -18,7 +18,7 @@ The WFS origin is configurable (`VITE_OGD_BASE_URL`). In development Vite proxie
 
 ## Consequences
 
-- No backend, no import job, always the city's current data.
+- No backend or import job. Results depend on the availability and contents of the city service.
 - Every Search is one network request to the city. A static host in production must either be allowed by the WFS's CORS policy or put the same `/ogd` reverse proxy in front of it.
 - The request shape (CQL syntax, axis order, geometry column `SHAPE`) lives in one file, `src/catalog/wfs.ts` (`wfsUrl`, `cqlFilter`), with tests; the column names come from `TREE_SOURCE` in `src/trees`. If the city changes its server, that is the one place to change.
-- We could not verify the WFS's CORS headers while building (the build sandbox cannot reach data.wien.gv.at). The dev proxy sidesteps this; production hosting must check it.
+- On 26 October 2026 the WFS returned `Access-Control-Allow-Origin: *`. Production uses the city URL directly by default. If that policy changes, use a same-origin proxy. See `docs/verification.md` for the live-service checks.

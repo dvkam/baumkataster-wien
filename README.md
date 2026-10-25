@@ -1,79 +1,127 @@
 # Baumkataster Wien
 
-Look up any city tree in Vienna: stand next to it, tap **In meiner Nähe**, and see every tree within 1 km, nearest first, with species, planting year and size. Or type the number from the tree's tag.
+Find trees in Vienna by the number on their tag or by location. The app shows species, planting year, trunk circumference, height and crown diameter where the city has recorded them.
 
-A rewrite of [plepe/baumkataster-wien](https://github.com/plepe/baumkataster-wien) (PHP + SQLite) as a React app with **no backend**: it asks the city's open-data WFS for exactly the trees a search needs.
+[Source code](https://github.com/dvkam/baumkataster-wien)
 
-## Quick start
+The interface is in German. It uses React and queries Vienna's public WFS directly. No database, API key or application backend is required.
+
+## Start locally
+
+Install Node.js 24 LTS and Git, then run:
 
 ```sh
-nvm use          # Node 22
+git clone https://github.com/dvkam/baumkataster-wien.git
+cd baumkataster-wien
 npm ci
-npm run dev      # http://localhost:5173, /ogd is proxied to data.wien.gv.at
+npm run dev
 ```
 
-| Script            | What it does                                           |
-| ----------------- | ------------------------------------------------------ |
-| `npm run dev`     | Vite dev server with the `/ogd` proxy                  |
-| `npm run build`   | Typecheck (`tsc -b`) and production build              |
-| `npm run preview` | Serve the build, also with the `/ogd` proxy            |
-| `npm test`        | Vitest (unit and app-level tests)                      |
-| `npm run lint`    | oxlint, type-aware, warnings fail                      |
-| `npm run format`  | oxfmt                                                  |
-| `npm run check`   | typecheck + lint + format check + tests (what CI runs) |
+Open the local address printed by Vite. If you use nvm, `nvm use` selects the version in `.nvmrc`.
 
-## How it works
+## Use the app
 
-```
-address (?nahe=… | ?nummer=… | ?baum=…)
-   │  useSearch: the address owns the Search
-   ▼
-Search ──► catalog.lookup(search) ──► WFS GetFeature (GeoJSON, CQL filter)
-                │                         ogdwien:BAUMKATOGD
-                ▼
-           parse (Zod) → Tree[] → distance, 1 km cut, order → Findings
-                │
-                ▼
-           useFindings → StatusLine / FindingList / TreeDetail
-```
+Enter a tree number and select **Suchen**. Numbers repeat across Vienna, so the search may return several trees.
 
-- **Nearby search** asks for the trees in a bounding box around your position (`BBOX(SHAPE,…)`), then computes exact distances, drops everything beyond 1 km and sorts. While you walk, the search follows you once you've moved more than 100 m.
-- **Tree number search** asks for `BAUMNUMMER='…'`. Tree numbers are **not unique** in Vienna, so you usually get several trees; with your location on, the number search is limited to your surroundings.
-- **One tree** is addressed by its `OBJECTID` (`?baum=…`), which is unique.
-- Every search lives in the address, so links, reload and back/forward work.
+Select **In meiner Nähe** to request location access. Results cover a radius of 1 km and sort by distance. Selecting the button again stops location tracking. While tracking, moving more than 100 metres starts a new search.
 
-The design rationale is in [`docs/`](docs): [spec](docs/spec.md), [architecture](docs/architecture.md), [ADR 0001: query the WFS directly](docs/adr/0001-query-the-wfs-directly.md), [ADR 0002: the address owns the Search](docs/adr/0002-the-address-owns-the-search.md). Domain terms are in [GLOSSARY.md](GLOSSARY.md).
+The home page also has links for the Hundertwasserhaus, Stadtpark and Volksgarten. These use fixed public coordinates and need no location permission.
 
-### Source layout
+Select a result to see its recorded measurements and a link to OpenStreetMap. Search criteria are part of the URL, so browser history and copied links work. Nearby URLs contain coordinates. Share them only if you intend to share that location.
 
-| Folder        | Owns                                                                                           |
-| ------------- | ---------------------------------------------------------------------------------------------- |
-| `src/geo`     | Position, haversine distance, bounding box                                                     |
-| `src/trees`   | The Tree model and parsing the Baumkataster's GeoJSON (the only place that knows column names) |
-| `src/search`  | The Search union and its address codec                                                         |
-| `src/catalog` | `createCatalog({ baseUrl, fetch }).lookup(search, signal)`, the only network seam              |
-| `src/app`     | React hooks: `useSearch`, `useFindings`, `useNearby`                                           |
-| `src/ui`      | Presentational components (styles live in `src/styles.css`)                                    |
+## Data source
 
-Modules import each other only through their `index.ts`; oxlint fails on deep imports.
+The source is [Baumkataster der Stadt Wien](https://www.data.gv.at/datasets/c91a4635-8b7d-43fe-9b27-d95dec8392a7?locale=de), provided by Stadt Wien through data.wien.gv.at under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 
-## Deploying
+| Setting      | Value                                                           |
+| ------------ | --------------------------------------------------------------- |
+| Endpoint     | `https://data.wien.gv.at/daten/geo`                             |
+| Service      | WFS 1.1.0, `GetFeature`                                         |
+| Layer        | `ogdwien:BAUMKATOGD`                                            |
+| Response     | GeoJSON, `EPSG:4326`                                            |
+| Filters      | `CQL_FILTER`, tree number, object ID or bounding box            |
+| Geometry     | `SHAPE`, longitude then latitude in GeoJSON                     |
+| Result limit | 5,000 usable records, with an extra record to detect truncation |
 
-The build is static (`dist/`). The browser needs to reach the WFS at `${VITE_OGD_BASE_URL}/daten/geo`:
+The app requests a bounding box for nearby searches, calculates Haversine distances and removes results beyond 1 km. The result list reveals 30 items at a time. This is local pagination of one bounded response, not server pagination. A notice appears if the server response exceeds the limit.
 
-- **Same-origin proxy (recommended):** serve `dist/` and proxy `/ogd/*` to `https://data.wien.gv.at/*`. Works regardless of the city's CORS policy. This is the default (`VITE_OGD_BASE_URL` unset → `/ogd`).
-- **Direct:** build with `VITE_OGD_BASE_URL=https://data.wien.gv.at` if the city's WFS sends CORS headers for your origin. This wasn't verifiable while building this, so check it in a browser first.
+`BAUMNUMMER` is a label, not a unique key. Detail URLs use `OBJECTID`. Do not assume an object ID is permanent across data replacements.
 
-## Things worth knowing
+Height and crown diameter are size classes, not exact measurements. The parser converts the city's class codes into ranges. Missing values stay missing. It validates the response with Zod and rejects coordinates outside geographic bounds.
 
-- **Verify against the live WFS once.** The request shape (`outputFormat=json`, `CQL_FILTER`, geometry column `SHAPE`, longitude-first `BBOX` in `EPSG:4326`) follows GeoServer conventions and the original app's CSV import, but the build sandbox couldn't reach data.wien.gv.at. If the city answers differently, `src/catalog/wfs.ts` is the one file to adjust; `src/catalog/catalog.test.ts` pins the current shape.
-- **Size classes** (height, crown diameter) are decoded from the city's class codes the same way the original app did: height class _n_ = (5n−4)–5n m, crown class _n_ = (3n−2)–3n m, class 8 = "over".
-- **Limits:** up to 5000 trees per request (enough for a 1 km box in the densest districts); the app says when a list was cut off.
+The app keeps the last eight successful searches in memory. It does not download the whole city dataset, store your location on an application server or use analytics. Location searches send a bounding box to the city's service.
+
+## Coverage and research
+
+On 26 October 2026, [Vienna's city-tree information page](https://www.wien.gv.at/umwelt/stadtbaeume) stated that the municipal register documents over 393,000 trees, including over 99,000 street trees. Those figures describe the municipal register. They are not the number of records available through this app.
+
+An unfiltered WFS response during this review reported 233,102 records. Later requests returned empty collections, including requests without a search filter. The service subsequently returned records again and passed the live nearby, number and object ID tests. These are dated observations, not a maintained total. The app does not display a fixed citywide count or invent a last-updated date.
+
+The open data includes street and park trees but is not a census of every tree in Vienna. An absent record does not prove that a tree is absent or has been removed. Consult the [official Umweltgut map](https://www.wien.gv.at/umwelt/umweltgut) for the city's own presentation.
 
 ## Tooling
 
-React 19.3, TypeScript 7 (strict, plus `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noPropertyAccessFromIndexSignature`, `verbatimModuleSyntax`, `erasableSyntaxOnly`, …), Vite 8, Vitest 5 with Testing Library and happy-dom, oxlint with type-aware rules, oxfmt, Zod 4 (mini).
+These versions matched the npm `latest` tags checked on 26 October 2026:
 
-## Data
+| Package             | Version |
+| ------------------- | ------- |
+| React and React DOM | 19.3.1  |
+| TypeScript          | 7.0.2   |
+| Vite                | 8.3.5   |
+| Oxlint              | 1.89.0  |
+| Oxfmt               | 0.74.0  |
 
-[Baumkataster der Stadt Wien](https://www.data.gv.at/katalog/dataset/stadt-wien_baumkatasterderstadtwien), Stadt Wien – data.wien.gv.at, CC BY 4.0.
+Dependencies are pinned and `package-lock.json` records the installation. Oxlint runs type-aware rules and fails on warnings. Oxfmt formats source and documentation.
+
+TypeScript enables `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitOverride`, `noImplicitReturns`, `noFallthroughCasesInSwitch`, `noPropertyAccessFromIndexSignature`, unused-code checks, `noUncheckedSideEffectImports`, `verbatimModuleSyntax` and `erasableSyntaxOnly`. Unreachable code and unused labels are errors.
+
+`skipLibCheck` remains enabled for external declaration files. Turning it off exposed a Happy DOM declaration referring to `UnderlyingDefaultSource`, which the installed Node declarations do not export. Application code still receives the strict checks above.
+
+## Checks
+
+```sh
+npm run check
+npm run build
+npm run preview
+```
+
+`check` runs TypeScript, Oxlint, Oxfmt and Vitest. Tests cover coordinate calculations, response parsing, search URLs, result ranking, navigation, location handling and the app's search interactions. CI also builds the production bundle.
+
+The optional live test contacts the city, so it requires network access and a working upstream service:
+
+```sh
+# macOS, Linux or WSL
+VITE_LIVE_WFS=1 npm test -- src/catalog/live.test.ts
+```
+
+```powershell
+# PowerShell
+$env:VITE_LIVE_WFS = '1'
+npm test -- src/catalog/live.test.ts
+Remove-Item Env:VITE_LIVE_WFS
+```
+
+The live test checks nearby, number and object ID lookups with the same parser as the app. Empty upstream results fail the test. Ordinary CI keeps this test disabled so an upstream outage does not block unrelated changes.
+
+## Hosting
+
+`npm run build` produces static files in `dist/`. Upload that directory to a static HTTPS host. Relative asset paths support hosting under a repository subdirectory.
+
+Development uses Vite's `/ogd` proxy. Production calls `https://data.wien.gv.at` directly by default. The city's response included `Access-Control-Allow-Origin: *` during the review. If that policy changes, configure a host-side proxy and build with `VITE_OGD_BASE_URL=/ogd`. The proxy must forward `/ogd/*` to `https://data.wien.gv.at/*` after removing `/ogd`.
+
+Vite's preview server is for checking the build locally. It is not a production server. Location access requires HTTPS or localhost.
+
+## Code and design
+
+| Directory     | Responsibility                             |
+| ------------- | ------------------------------------------ |
+| `src/geo`     | Coordinates, distance and bounding boxes   |
+| `src/trees`   | Tree types and source-data validation      |
+| `src/search`  | Search types and URL parsing               |
+| `src/catalog` | WFS requests, result limits and sorting    |
+| `src/app`     | React state, navigation and location hooks |
+| `src/ui`      | Search controls, results and detail views  |
+
+The design takes inspiration from Hundertwasser's tree forms, irregular outlines and coloured architectural details. The illustration is an original SVG. Text and controls remain simple, with keyboard focus indicators, a skip link, dark mode and reduced-motion support. The project has no affiliation with Hundertwasser's estate or the City of Vienna.
+
+The PHP application [plepe/baumkataster-wien](https://github.com/plepe/baumkataster-wien) supplied the original idea. This repository uses a React implementation with direct WFS queries. See `docs/` for the search model and architecture decisions.
