@@ -84,6 +84,14 @@ describe("Baumkataster", () => {
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 
+  it("explores a named place without asking for the device location", async () => {
+    const geolocation = fakeGeolocation();
+    const { user } = open("/");
+    await user.click(screen.getByRole("link", { name: /Beim Hundertwasserhaus/u }));
+    expect(window.location.search).toContain("nahe=48.20717%2C16.39416");
+    expect(geolocation.watchPosition).not.toHaveBeenCalled();
+  });
+
   it("starts with an introduction and asks nothing of the WFS", () => {
     const { fetch } = open("/");
     expect(screen.getByRole("heading", { name: "Welcher Baum ist das?" })).toBeDefined();

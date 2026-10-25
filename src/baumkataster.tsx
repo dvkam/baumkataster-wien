@@ -50,7 +50,7 @@ function Content(props: {
   back: () => void;
 }) {
   const { state, search, ...actions } = props;
-  if (state.kind === "idle" || search.kind === "none") return <Intro />;
+  if (state.kind === "idle" || search.kind === "none") return <Intro navigate={actions.navigate} />;
   if (search.kind === "tree") return <TreeView state={state} search={search} {...actions} />;
   return <ListView state={state} search={search} {...actions} />;
 }
@@ -62,6 +62,9 @@ export function Baumkataster({ catalog }: { readonly catalog: Catalog }) {
 
   return (
     <div className="page">
+      <a href="#content" className="skip-link">
+        Zum Inhalt
+      </a>
       <header className="masthead">
         <div className="masthead-inner">
           <h1 className="brand">
@@ -86,17 +89,21 @@ export function Baumkataster({ catalog }: { readonly catalog: Catalog }) {
           />
         </div>
       </header>
-      <main className="content">
+      <main id="content" className="content" tabIndex={-1}>
         <Content state={state} search={search} retry={retry} navigate={navigate} back={back} />
       </main>
       <footer className="footer">
         <p>
           Daten:{" "}
-          <a href="https://www.data.gv.at/katalog/dataset/stadt-wien_baumkatasterderstadtwien">
+          <a href="https://www.data.gv.at/datasets/c91a4635-8b7d-43fe-9b27-d95dec8392a7?locale=de">
             Baumkataster der Stadt Wien
           </a>{" "}
           (CC BY 4.0). Nach einer Idee von{" "}
           <a href="https://github.com/plepe/baumkataster-wien">plepe/baumkataster-wien</a>.
+        </p>
+        <p>
+          Unabhängige Anwendung. Keine Website der Stadt Wien.{" "}
+          <a href="https://github.com/dvkam/baumkataster-wien">Quellcode</a>
         </p>
       </footer>
     </div>
