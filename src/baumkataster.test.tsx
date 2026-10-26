@@ -1,9 +1,10 @@
+import { RouterProvider } from "@tanstack/react-router";
 // @vitest-environment happy-dom
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { Baumkataster } from "./baumkataster.tsx";
+import { createAppRouter } from "./app-router.tsx";
 import { createCatalog } from "./catalog";
 import { rawCollection, rawTree } from "./trees/fixtures.ts";
 import { ErrorBoundary } from "./ui";
@@ -58,9 +59,11 @@ function fakeGeolocation(position = stephansdom) {
   return geolocation;
 }
 
-function open(address: string, fetch: Fetch = fakeWfs()) {
+async function open(address: string, fetch: Fetch = fakeWfs()) {
   window.history.replaceState(null, "", address);
-  render(<Baumkataster catalog={createCatalog({ baseUrl: "/ogd", fetch })} />);
+  const router = createAppRouter(createCatalog({ baseUrl: "/ogd", fetch }));
+  await router.load();
+  render(<RouterProvider router={router} />);
   return { fetch, user: userEvent.setup() };
 }
 
@@ -78,7 +81,7 @@ describe("Baumkataster", () => {
       .fn<Fetch>()
       .mockResolvedValueOnce(Response.json(rawCollection([])))
       .mockResolvedValueOnce(Response.json(rawCollection([spitzahorn])));
-    const { user } = open("/?nummer=1026", fetch);
+    const { user } = await open("/?nummer=1026", fetch);
     await user.click(await screen.findByRole("button", { name: "Erneut versuchen" }));
     expect(await screen.findByText("1 Baum mit Nr. 1026")).toBeDefined();
     expect(fetch).toHaveBeenCalledTimes(2);
@@ -86,20 +89,20 @@ describe("Baumkataster", () => {
 
   it("explores a named place without asking for the device location", async () => {
     const geolocation = fakeGeolocation();
-    const { user } = open("/");
+    const { user } = await open("/");
     await user.click(screen.getByRole("link", { name: /Beim Hundertwasserhaus/u }));
     expect(window.location.search).toContain("nahe=48.20717%2C16.39416");
     expect(geolocation.watchPosition).not.toHaveBeenCalled();
   });
 
-  it("starts with an introduction and asks nothing of the WFS", () => {
-    const { fetch } = open("/");
+  it("starts with an introduction and asks nothing of the WFS", async () => {
+    const { fetch } = await open("/");
     expect(screen.getByRole("heading", { name: "Welcher Baum ist das?" })).toBeDefined();
     expect(fetch).not.toHaveBeenCalled();
   });
 
   it("restores a Tree number search from the address", async () => {
-    open("/?nummer=1026");
+    await open("/?nummer=1026");
     expect(await screen.findByText("2 Bäume mit Nr. 1026")).toBeDefined();
     const list = screen.getByRole("list", { name: "Bäume" });
     expect(
@@ -110,7 +113,7 @@ describe("Baumkataster", () => {
   });
 
   it("searches a typed Tree number and writes it into the address", async () => {
-    const { user } = open("/");
+    const { user } = await open("/");
     await user.type(screen.getByLabelText("Baumnummer"), "1026");
     await user.click(screen.getByRole("button", { name: "Suchen" }));
 
@@ -119,7 +122,7 @@ describe("Baumkataster", () => {
   });
 
   it("refuses a Tree number that can't be on a tag", async () => {
-    const { user, fetch } = open("/");
+    const { user, fetch } = await open("/");
     await user.type(screen.getByLabelText("Baumnummer"), "'; DROP");
     await user.click(screen.getByRole("button", { name: "Suchen" }));
 
@@ -129,7 +132,7 @@ describe("Baumkataster", () => {
 
   it("lists the Trees around the device, nearest first, after 'In meiner Nähe'", async () => {
     fakeGeolocation();
-    const { user } = open("/");
+    const { user } = await open("/");
     await user.click(screen.getByRole("button", { name: "In meiner Nähe" }));
 
     expect(await screen.findByText("2 Bäume im Umkreis von 1 km")).toBeDefined();
@@ -143,7 +146,7 @@ describe("Baumkataster", () => {
 
   it("narrows a city-wide Tree number search to the device's surroundings on 'In meiner Nähe'", async () => {
     fakeGeolocation();
-    const { user } = open("/");
+    const { user } = await open("/");
     const locate = screen.getByRole("button", { name: "In meiner Nähe" });
     await user.click(locate);
     await user.click(await screen.findByRole("link", { name: /Spitzahorn/u }));
@@ -157,14 +160,14 @@ describe("Baumkataster", () => {
     expect(locate.getAttribute("aria-pressed")).toBe("true");
   });
 
-  it("disables 'In meiner Nähe' on a device without geolocation", () => {
+  it("disables 'In meiner Nähe' on a device without geolocation", async () => {
     Object.defineProperty(navigator, "geolocation", { value: undefined, configurable: true });
-    open("/");
+    await open("/");
     expect(screen.getByRole("button", { name: "In meiner Nähe" })).toHaveProperty("disabled", true);
   });
 
   it("opens a Tree and comes back to the list without asking again", async () => {
-    const { user, fetch } = open("/?nummer=1026");
+    const { user, fetch } = await open("/?nummer=1026");
     await user.click(await screen.findByRole("link", { name: /Spitzahorn/u }));
 
     expect(await screen.findByRole("heading", { name: "Spitzahorn" })).toBeDefined();
@@ -178,9 +181,11 @@ describe("Baumkataster", () => {
   it("shows the error boundary instead of a blank page when something unexpected breaks", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     window.history.replaceState(null, "", "/?nummer=1");
+    const router = createAppRouter({ lookup: () => Promise.reject(new RangeError("bug")) });
+    await router.load();
     render(
       <ErrorBoundary>
-        <Baumkataster catalog={{ lookup: () => Promise.reject(new RangeError("bug")) }} />
+        <RouterProvider router={router} />
       </ErrorBoundary>,
     );
     expect(await screen.findByText("Etwas ist schiefgegangen.")).toBeDefined();
@@ -191,7 +196,7 @@ describe("Baumkataster", () => {
       .fn<Fetch>()
       .mockRejectedValueOnce(new TypeError("Failed to fetch"))
       .mockImplementation(fakeWfs());
-    const { user } = open("/?nummer=1026", fetch);
+    const { user } = await open("/?nummer=1026", fetch);
     expect(await screen.findByText("Der Baumkataster ist gerade nicht erreichbar.")).toBeDefined();
 
     await user.type(screen.getByLabelText("Baumnummer"), "{Backspace>4}7{Enter}");
@@ -205,7 +210,7 @@ describe("Baumkataster", () => {
       .fn<Fetch>()
       .mockRejectedValueOnce(new TypeError("Failed to fetch"))
       .mockImplementation(fakeWfs());
-    const { user } = open("/?nummer=1026", fetch);
+    const { user } = await open("/?nummer=1026", fetch);
 
     expect(await screen.findByText("Der Baumkataster ist gerade nicht erreichbar.")).toBeDefined();
     await user.click(screen.getByRole("button", { name: "Erneut versuchen" }));

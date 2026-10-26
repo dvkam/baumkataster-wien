@@ -1,7 +1,8 @@
+import { RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
-import { Baumkataster } from "./baumkataster.tsx";
+import { createAppRouter } from "./app-router.tsx";
 import { createCatalog } from "./catalog";
 import { ErrorBoundary } from "./ui";
 
@@ -16,10 +17,11 @@ const catalog = createCatalog({
   fetch: (input, init) => fetch(input, init),
 });
 
+const router = createAppRouter(catalog);
 createRoot(root).render(
   <StrictMode>
     <ErrorBoundary>
-      <Baumkataster catalog={catalog} />
+      <RouterProvider router={router} />
     </ErrorBoundary>
   </StrictMode>,
 );
