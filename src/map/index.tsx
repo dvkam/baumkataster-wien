@@ -25,7 +25,7 @@ export function TreeMap({ findings, search, navigate, stop }: TreeMapProps) {
     if (container.current === null) return undefined;
     const instance = createMap(container.current, {
       preferCanvas: true,
-      scrollWheelZoom: false,
+      scrollWheelZoom: true,
     }).setView([48.20849, 16.37308], 13);
     map.current = instance;
     tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
