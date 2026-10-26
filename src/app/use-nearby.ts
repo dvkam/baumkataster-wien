@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 
 import { distanceMeters } from "../geo";
-import { nearby, treeNumberOf } from "../search";
+import { nearby, speciesOf, treeNumberOf } from "../search";
 import type { Search } from "../search";
 import { useDevicePosition } from "./use-device-position.ts";
 import type { DevicePosition } from "./use-device-position.ts";
@@ -33,7 +33,7 @@ export function useNearby(
 
   const locate = useCallback(() => {
     if (device.kind === "located") {
-      navigate(nearby(device.position, treeNumberOf(search)));
+      navigate(nearby(device.position, treeNumberOf(search), speciesOf(search)));
       return;
     }
     wantsNearby.current = true;
@@ -44,12 +44,12 @@ export function useNearby(
     if (device.kind !== "located") return;
     if (wantsNearby.current) {
       wantsNearby.current = false;
-      navigate(nearby(device.position, treeNumberOf(search)));
+      navigate(nearby(device.position, treeNumberOf(search), speciesOf(search)));
       return;
     }
     if (search.kind !== "nearby") return;
     if (distanceMeters(search.near, device.position) <= REFETCH_THRESHOLD_METERS) return;
-    navigate(nearby(device.position, search.treeNumber), "replace");
+    navigate(nearby(device.position, search.treeNumber, search.species ?? null), "replace");
   }, [device, navigate, search]);
 
   const stopFollowing = useCallback(() => {

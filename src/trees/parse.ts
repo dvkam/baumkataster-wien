@@ -46,6 +46,7 @@ const GEOMETRY_COLUMN = "SHAPE";
 export const TREE_SOURCE = {
   layer: "ogdwien:BAUMKATOGD",
   idColumn: "OBJECTID" satisfies Column,
+  speciesColumn: "GATTUNG_ART" satisfies Column,
   numberColumn: "BAUMNUMMER" satisfies Column,
   geometryColumn: GEOMETRY_COLUMN,
   columns: [...Object.keys(treeProperties.shape), GEOMETRY_COLUMN],

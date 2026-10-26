@@ -73,9 +73,51 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  vi.unstubAllGlobals();
 });
 
 describe("Baumkataster", () => {
+  it("searches a German species name and keeps it in the URL", async () => {
+    const fetch = fakeWfs();
+    const { user } = await open("/", fetch);
+    await user.selectOptions(screen.getByLabelText("Suchart"), "species");
+    await user.type(screen.getByLabelText("Baumart"), "Ahorn{Enter}");
+    expect(await screen.findByText('2 Bäume für "Ahorn" in Wien')).toBeDefined();
+    expect(window.location.search).toBe("?art=Ahorn");
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining("GATTUNG_ART+ILIKE+%27%25Ahorn%25%27"),
+      expect.anything(),
+    );
+  });
+
+  it("finds a landmark on submit and searches trees at the selected place", async () => {
+    const geocode = vi.fn<typeof globalThis.fetch>(() =>
+      Promise.resolve(
+        Response.json({
+          features: [
+            {
+              geometry: { type: "Point", coordinates: [16.39416, 48.20717] },
+              properties: {
+                osm_id: 1,
+                osm_type: "N",
+                name: "Hundertwasserhaus",
+                street: "Kegelgasse",
+                city: "Wien",
+              },
+            },
+          ],
+        }),
+      ),
+    );
+    vi.stubGlobal("fetch", geocode);
+    const { user } = await open("/");
+    await user.type(screen.getByLabelText("Ort oder Adresse"), "Hundertwasserhaus");
+    expect(geocode).not.toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: "Suchen" }));
+    await user.click(await screen.findByRole("button", { name: /Hundertwasserhaus Kegelgasse/u }));
+    expect(window.location.search).toBe("?nahe=48.20717%2C16.39416");
+  });
+
   it("retries an empty response instead of reusing its cached result", async () => {
     const fetch = vi
       .fn<Fetch>()
@@ -114,6 +156,7 @@ describe("Baumkataster", () => {
 
   it("searches a typed Tree number and writes it into the address", async () => {
     const { user } = await open("/");
+    await user.selectOptions(screen.getByLabelText("Suchart"), "number");
     await user.type(screen.getByLabelText("Baumnummer"), "1026");
     await user.click(screen.getByRole("button", { name: "Suchen" }));
 
@@ -123,6 +166,7 @@ describe("Baumkataster", () => {
 
   it("refuses a Tree number that can't be on a tag", async () => {
     const { user, fetch } = await open("/");
+    await user.selectOptions(screen.getByLabelText("Suchart"), "number");
     await user.type(screen.getByLabelText("Baumnummer"), "'; DROP");
     await user.click(screen.getByRole("button", { name: "Suchen" }));
 
@@ -147,17 +191,20 @@ describe("Baumkataster", () => {
   it("narrows a city-wide Tree number search to the device's surroundings on 'In meiner Nähe'", async () => {
     fakeGeolocation();
     const { user } = await open("/");
-    const locate = screen.getByRole("button", { name: "In meiner Nähe" });
-    await user.click(locate);
+    await user.click(screen.getByRole("button", { name: "In meiner Nähe" }));
     await user.click(await screen.findByRole("link", { name: /Spitzahorn/u }));
     await user.click(await screen.findByRole("link", { name: "Alle mit Nr. 1026" }));
 
     expect(await screen.findByText("2 Bäume mit Nr. 1026")).toBeDefined();
-    expect(locate.getAttribute("aria-pressed")).toBe("false");
+    expect(
+      screen.getByRole("button", { name: "In meiner Nähe" }).getAttribute("aria-pressed"),
+    ).toBe("false");
 
-    await user.click(locate);
+    await user.click(screen.getByRole("button", { name: "In meiner Nähe" }));
     expect(window.location.search).toBe("?nahe=48.20849%2C16.37308&nummer=1026");
-    expect(locate.getAttribute("aria-pressed")).toBe("true");
+    expect(
+      screen.getByRole("button", { name: "In meiner Nähe" }).getAttribute("aria-pressed"),
+    ).toBe("true");
   });
 
   it("disables 'In meiner Nähe' on a device without geolocation", async () => {

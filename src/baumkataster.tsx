@@ -4,7 +4,7 @@ import { useState } from "react";
 import { createQueryClient, useFindings, useNearby, useSearch } from "./app";
 import type { ActiveFindingsState, FindingsState, Navigate } from "./app";
 import type { Catalog } from "./catalog";
-import { treeNumberOf } from "./search";
+import { speciesOf, treeNumberOf } from "./search";
 import type { ActiveSearch, Search } from "./search";
 import { FindingList, Intro, SearchBar, StatusLine, TreeDetail, TreeIcon } from "./ui";
 
@@ -36,7 +36,7 @@ function ListView(props: {
       {shown === null ? null : (
         <FindingList
           findings={shown}
-          listKey={`${search.kind}:${treeNumberOf(search) ?? ""}`}
+          listKey={`${search.kind}:${treeNumberOf(search) ?? ""}:${speciesOf(search) ?? ""}`}
           stale={state.kind === "loading"}
           navigate={navigate}
         />
@@ -83,6 +83,7 @@ function BaumkatasterContent({ catalog }: { readonly catalog: Catalog }) {
             </a>
           </h1>
           <SearchBar
+            key={search.kind}
             search={search}
             device={device}
             following={following}

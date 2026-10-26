@@ -118,3 +118,18 @@ describe("treeNumberOf", () => {
     expect(treeNumberOf({ kind: "tree", treeId: treeId(1) })).toBeNull();
   });
 });
+
+describe("species searches", () => {
+  it("round-trips a citywide species query", () => {
+    const search: Search = { kind: "species", term: "Acer platanoides" };
+    expect(parseSearch(searchToParams(search))).toEqual(search);
+  });
+  it("round-trips a nearby species query", () => {
+    const search = nearby({ latitude: 48.2, longitude: 16.4 }, null, "Ahorn");
+    expect(parseSearch(searchToParams(search))).toEqual(search);
+  });
+  it("rejects wildcard and control input from URLs", () => {
+    expect(fromAddress("art=%25")).toEqual({ kind: "none" });
+    expect(fromAddress("art=Ahorn%00")).toEqual({ kind: "none" });
+  });
+});

@@ -3,21 +3,23 @@ import type { CatalogErrorKind } from "../catalog";
 import { SEARCH_RADIUS_METERS } from "../catalog";
 import type { ActiveSearch } from "../search";
 import { formatCount, formatDistance } from "./format.ts";
-
 const failureText: Record<CatalogErrorKind, string> = {
   network: "Der Baumkataster ist gerade nicht erreichbar.",
   http: "Der Baumkataster hat mit einem Fehler geantwortet.",
   format: "Der Baumkataster hat unerwartete Daten geliefert.",
 };
-
 function summary(search: ActiveSearch, count: number): string {
   const trees = formatCount(count, "Baum", "Bäume");
   switch (search.kind) {
     case "nearby": {
       const radius = `im Umkreis von ${formatDistance(SEARCH_RADIUS_METERS)}`;
+      if (search.species !== undefined) return `${trees} für "${search.species}" ${radius}`;
       return search.treeNumber === null
         ? `${trees} ${radius}`
         : `${trees} mit Nr. ${search.treeNumber} ${radius}`;
+    }
+    case "species": {
+      return `${trees} für "${search.term}" in Wien`;
     }
     case "treeNumber": {
       return `${trees} mit Nr. ${search.treeNumber}`;
@@ -31,7 +33,6 @@ function summary(search: ActiveSearch, count: number): string {
     }
   }
 }
-
 function note(search: ActiveSearch, count: number, truncated: boolean): string | null {
   if (count === 0)
     return "Prüfe die Suche oder versuche es später erneut. Auch der Datendienst kann vorübergehend leere Ergebnisse liefern.";
@@ -44,13 +45,11 @@ function note(search: ActiveSearch, count: number, truncated: boolean): string |
   }
   return null;
 }
-
 type StatusLineProps = {
   readonly search: ActiveSearch;
   readonly state: ActiveFindingsState;
   readonly retry: () => void;
 };
-
 /** One line that says what is on screen; announced to screen readers. */
 export function StatusLine({ search, state, retry }: StatusLineProps) {
   if (state.kind === "failed") {

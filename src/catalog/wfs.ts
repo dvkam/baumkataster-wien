@@ -22,13 +22,22 @@ export function cqlFilter(search: ActiveSearch): string {
     case "treeNumber": {
       return `${TREE_SOURCE.numberColumn}=${cqlString(search.treeNumber)}`;
     }
+    case "species": {
+      return `${TREE_SOURCE.speciesColumn} ILIKE ${cqlString(`%${search.term}%`)}`;
+    }
     case "nearby": {
       const box = boundingBox(search.near, SEARCH_RADIUS_METERS);
       const corners = [box.west, box.south, box.east, box.north].map(String).join(",");
       const bbox = `BBOX(${TREE_SOURCE.geometryColumn},${corners},'EPSG:4326')`;
-      return search.treeNumber === null
-        ? bbox
-        : `${bbox} AND ${TREE_SOURCE.numberColumn}=${cqlString(search.treeNumber)}`;
+      const number =
+        search.treeNumber === null
+          ? null
+          : `${TREE_SOURCE.numberColumn}=${cqlString(search.treeNumber)}`;
+      const species =
+        search.species === undefined
+          ? null
+          : `${TREE_SOURCE.speciesColumn} ILIKE ${cqlString(`%${search.species}%`)}`;
+      return [bbox, number, species].filter((part) => part !== null).join(" AND ");
     }
     default: {
       const exhaustive: never = search;
