@@ -13,3 +13,9 @@ The app's own TypeScript configuration is strict. Dependency declaration checkin
 The documented `npm run check` command passed TypeScript, type-aware Oxlint, Oxfmt and 99 deterministic tests. The separate live test passed, and the production build completed. Browser review covered the home page and real search interactions.
 
 New prose was reviewed with the user's WSL pstack Unslop skill. This review removes filler and unsupported claims while retaining names, commands, measurements and source attribution.
+
+## Map and search update
+
+The expanded implementation passes 106 deterministic tests. Tests include landmark selection, German species search, URL round trips and rejection of invalid place coordinates. Browser checks use real Photon and Vienna responses, including Hundertwasserhaus selection and clicking a tree marker to open its details. The map uses canvas markers; the accessible result list remains available below it.
+
+A real nearby search exceeded the former 5,000-record cap. The cap is now 20,000, with the same truncation notice for larger responses. The Hundertwasserhaus-area query returned 7,946 trees without truncation during the browser check. This is a test observation, not a maintained count.

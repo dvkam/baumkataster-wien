@@ -64,9 +64,9 @@ The app asks the city's WFS directly for just the Trees a Search needs, so the d
 - **Size classes** are decoded from the numeric class codes the Baumkataster stores (height: class 1 = 0–5 m, n = 5n−4…5n m, 8 = over 35 m; crown: class 1 = 0–3 m, n = 3n−2…3n m, 8 = over 21 m; 0 = not recorded), the same scheme the original app used.
 - **Validation at the boundary** with Zod. A response whose shape doesn't match fails the Search with a "format" error. Features without geometry are skipped, because they cannot be placed.
 - **Error model**: `CatalogError` with `kind: "network" | "http" | "format"`.
-- **Limits**: at most 5000 features per request (a 1 km box in the densest districts holds a few thousand); Findings say when that limit was hit.
-- **Navigation extras that serve stories 4, 15 and 16**: the last 8 successful answers are remembered so back/forward is instant (failures are not); an in-app "Zurück" goes back in history when the previous entry is this app; "In meiner Nähe" is a toggle that stops the GPS; a Tree links to all Trees with its number.
-- **No router, no data-fetching library, no UI library.** React 19, plain CSS with custom properties.
+- **Limits**: at most 20,000 records per request; Findings say when that limit was hit.
+- **Navigation extras that serve stories 4, 15 and 16**: TanStack Query caches recent successful responses for navigation; an in-app "Zurück" goes back in history when the previous entry is this app; "In meiner Nähe" is a toggle that stops the GPS; a Tree links to all Trees with its number.
+- **Libraries.** React 19, TanStack Router, TanStack Query and Leaflet, with plain CSS.
 - **Motion** follows Emil Kowalski's design-engineering rules: movement only through `transform` and `opacity` (colour changes on hover and press use plain `ease`), custom ease-out, ≤ 300 ms, `:active` press scale, hover gated behind `(hover: hover)`, short stagger on result entry, fades only under reduced motion.
 - **Tooling**: Vite 8, TypeScript 7 with a strict configuration (including `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `verbatimModuleSyntax`, `erasableSyntaxOnly`), oxlint with type-aware rules, oxfmt, Vitest.
 
@@ -92,3 +92,9 @@ The app asks the city's WFS directly for just the Trees a Search needs, so the d
 
 - The original app's comment claims its bounding box is ~1.5 km; at Vienna's latitude (48.2° N) ±0.0090° latitude and ±0.0135° longitude are both ~1.0 km. The rewrite computes the box from the radius.
 - The original computed Distance twice (spherical law of cosines in SQLite with R = 6378.14 km, haversine in the browser with R = 6371 km), so server and client disagreed by ~0.1 %. The rewrite has one Distance function.
+
+## Map and expanded search
+
+The search form distinguishes places, species and tree numbers. Photon resolves addresses and landmarks only after submission. Users select a place before the app requests its nearby trees. Species queries filter `GATTUNG_ART` with a case-insensitive substring match. They can be citywide or combined with a nearby bounding box.
+
+The Leaflet map displays the same tree results as the list. Marker clicks open details. Moving the map does not request tree data until the user selects `Hier suchen`. That action retains the current number or species filter and stops device tracking.

@@ -1,6 +1,6 @@
 # Architecture
 
-Produced with pstack's **architect** process (usage first, design it twice, screen against the red flags) and Matt Pocock's **codebase-design** vocabulary (deep modules, seams, adapters).
+The app uses TanStack Router for search URLs, TanStack Query for network state, Photon for places and Leaflet for the map.
 
 ## Usage sketch (written first)
 
@@ -11,11 +11,8 @@ const catalog = createCatalog({
     import.meta.env.VITE_OGD_BASE_URL ?? (import.meta.env.DEV ? "/ogd" : "https://data.wien.gv.at"),
   fetch,
 });
-createRoot(root).render(
-  <ErrorBoundary>
-    <Baumkataster catalog={catalog} />
-  </ErrorBoundary>,
-);
+const router = createAppRouter(catalog);
+createRoot(root).render(<RouterProvider router={router} />);
 
 // baumkataster.tsx: everything derives from the Search in the address
 const { search, navigate, back } = useSearch();
