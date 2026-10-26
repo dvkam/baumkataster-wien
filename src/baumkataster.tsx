@@ -1,5 +1,5 @@
 import { QueryClientProvider } from "@tanstack/react-query";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 
 import { createQueryClient, useFindings, useNearby, useSearch } from "./app";
 import type { ActiveFindingsState, FindingsState, Navigate } from "./app";
@@ -7,6 +7,12 @@ import type { Catalog } from "./catalog";
 import { speciesOf, treeNumberOf } from "./search";
 import type { ActiveSearch, Search } from "./search";
 import { FindingList, Intro, SearchBar, StatusLine, TreeDetail, TreeIcon } from "./ui";
+
+const MAP_LOADING = <p className="hint">Karte wird geladen …</p>;
+const TreeMap = lazy(async () => {
+  const module = await import("./map");
+  return { default: module.TreeMap };
+});
 
 function TreeView(props: {
   state: ActiveFindingsState;
@@ -22,17 +28,23 @@ function TreeView(props: {
 }
 
 function ListView(props: {
+  stop: () => void;
   state: ActiveFindingsState;
   search: ActiveSearch;
   retry: () => void;
   navigate: Navigate;
 }) {
-  const { state, search, retry, navigate } = props;
+  const { state, search, retry, navigate, stop } = props;
   const stale = state.kind === "loading" ? state.stale : null;
   const shown = state.kind === "ready" ? state.findings : stale;
   return (
     <>
       <StatusLine search={search} state={state} retry={retry} />
+      {state.kind === "ready" ? (
+        <Suspense fallback={MAP_LOADING}>
+          <TreeMap findings={state.findings} search={search} navigate={navigate} stop={stop} />
+        </Suspense>
+      ) : null}
       {shown === null ? null : (
         <FindingList
           findings={shown}
@@ -46,6 +58,7 @@ function ListView(props: {
 }
 
 function Content(props: {
+  stop: () => void;
   state: FindingsState;
   search: Search;
   retry: () => void;
@@ -53,7 +66,15 @@ function Content(props: {
   back: () => void;
 }) {
   const { state, search, ...actions } = props;
-  if (state.kind === "idle" || search.kind === "none") return <Intro navigate={actions.navigate} />;
+  if (state.kind === "idle" || search.kind === "none")
+    return (
+      <Intro
+        navigate={(next, mode) => {
+          actions.stop();
+          actions.navigate(next, mode);
+        }}
+      />
+    );
   if (search.kind === "tree") return <TreeView state={state} search={search} {...actions} />;
   return <ListView state={state} search={search} {...actions} />;
 }
@@ -94,7 +115,14 @@ function BaumkatasterContent({ catalog }: { readonly catalog: Catalog }) {
         </div>
       </header>
       <main id="content" className="content" tabIndex={-1}>
-        <Content state={state} search={search} retry={retry} navigate={navigate} back={back} />
+        <Content
+          state={state}
+          search={search}
+          retry={retry}
+          navigate={navigate}
+          back={back}
+          stop={stop}
+        />
       </main>
       <footer className="footer">
         <p>

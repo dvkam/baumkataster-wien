@@ -9,6 +9,8 @@ import { createCatalog } from "./catalog";
 import { rawCollection, rawTree } from "./trees/fixtures.ts";
 import { ErrorBoundary } from "./ui";
 
+vi.mock("./map", () => ({ TreeMap: () => <div aria-label="Interaktive Baumkarte" /> }));
+
 type Fetch = typeof globalThis.fetch;
 
 const stephansdom = { latitude: 48.208_49, longitude: 16.373_08 };

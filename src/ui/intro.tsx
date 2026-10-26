@@ -11,8 +11,8 @@ export function Intro({ navigate }: { readonly navigate: Navigate }) {
         Welcher Baum ist das?
       </h2>
       <p>
-        Gib die Nummer vom Baumschild ein oder suche in deiner Nähe. Du findest die Baumart, das
-        Pflanzjahr und die erfassten Maße.
+        Suche eine Adresse, eine Baumart oder die Nummer vom Baumschild. Klicke einen Baum auf der
+        Karte für seine Art, sein Pflanzjahr und die erfassten Maße.
       </p>
       <img
         className="city-garden"

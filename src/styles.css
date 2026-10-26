@@ -889,3 +889,43 @@ a {
   color: var(--muted);
   font-size: 0.8rem;
 }
+
+.map-section {
+  display: grid;
+  gap: 0.65rem;
+}
+.map-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.8rem;
+  font-size: 0.85rem;
+}
+.tree-map {
+  height: clamp(280px, 50vh, 460px);
+  width: 100%;
+  border-radius: 12px 17px 11px 15px;
+  border: 1px solid var(--line);
+  z-index: 0;
+  background: #e9eadf;
+}
+.tree-map .leaflet-control a {
+  color: #253c32;
+}
+.tree-map .leaflet-tooltip {
+  color: #253c32;
+  background: #fffdf7;
+  font-family: inherit;
+}
+.tree-map .leaflet-control-attribution {
+  color: #253c32;
+  background: #fffdf7e8;
+}
+@media (max-width: 420px) {
+  .map-toolbar {
+    align-items: start;
+  }
+  .map-toolbar .button {
+    flex-shrink: 0;
+  }
+}
