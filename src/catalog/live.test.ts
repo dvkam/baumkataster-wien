@@ -25,6 +25,14 @@ describe.skipIf(import.meta.env["VITE_LIVE_WFS"] !== "1")("Vienna WFS live contr
       expect(item.distanceMeters).not.toBeNull();
       expect(item.distanceMeters).toBeLessThanOrEqual(1_000);
     }
+    const species = await catalog.lookup(
+      nearby({ latitude: 48.20717, longitude: 16.39416 }, null, "Ahorn"),
+      signal,
+    );
+    expect(species.items.length).toBeGreaterThan(0);
+    for (const item of species.items) {
+      expect(JSON.stringify(item.tree.species).toLowerCase()).toContain("ahorn");
+    }
     const tree = numberedTree(results.items);
     const detail = await catalog.lookup({ kind: "tree", treeId: tree.id }, signal);
     expect(detail.items.map((item) => item.tree.id)).toEqual([tree.id]);

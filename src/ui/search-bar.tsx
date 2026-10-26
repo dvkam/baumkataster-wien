@@ -48,11 +48,11 @@ function initialMode(search: Search): SearchMode {
     return "number";
   return "place";
 }
-function initialInput(search: Search): string {
-  const species = speciesOf(search);
-  if (species !== null) return species;
+function initialInput(search: Search, mode: SearchMode): string {
+  if (mode === "species") return speciesOf(search) ?? "";
   return search.kind === "treeNumber" || search.kind === "nearby" ? (search.treeNumber ?? "") : "";
 }
+
 export function SearchBar({ search, device, following, navigate, locate, stop }: SearchBarProps) {
   const inputId = useId();
   const hintId = useId();
@@ -110,9 +110,9 @@ export function SearchBar({ search, device, following, navigate, locate, stop }:
               <SearchIcon className="field-icon" />
               <input
                 id={inputId}
-                key={`${mode}:${initialInput(search)}`}
+                key={`${mode}:${initialInput(search, mode)}`}
                 name="term"
-                defaultValue={initialInput(search)}
+                defaultValue={initialInput(search, mode)}
                 placeholder={
                   mode === "number" ? "Nummer am Baumschild, z. B. 1026" : "Ahorn, Linde, Acer …"
                 }
@@ -154,7 +154,9 @@ export function SearchBar({ search, device, following, navigate, locate, stop }:
           />
           In meiner Nähe
         </button>
-        {search.kind === "nearby" && mode !== "place" ? (
+        {search.kind === "nearby" &&
+        mode !== "place" &&
+        (search.treeNumber !== null || search.species !== undefined) ? (
           <button
             type="button"
             className="button button-quiet"
