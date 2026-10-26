@@ -23,19 +23,19 @@ Open the local address printed by Vite. If you use nvm, `nvm use` selects the ve
 
 ## Use the app
 
-Choose a search mode in **Suchen nach**:
+Use the single search field for an address, landmark, tree species or tree number. Suggestions appear as you type.
 
-| Mode             | Example                              | What happens                                                   |
-| ---------------- | ------------------------------------ | -------------------------------------------------------------- |
-| Ort oder Adresse | `Hundertwasserhaus`, `Kegelgasse 36` | Select a matching place to see trees within 1 km.              |
-| Baumart          | `Ahorn`, `Linde`, `Acer`             | Search German and botanical names, including partial matches.  |
-| Baumnummer       | `1026`                               | Search the number on a tree tag. Numbers repeat across Vienna. |
+- Enter `Hundertwasserhaus` or `Kegelgasse 36`, then select a place to see trees within 1 km.
+- Enter `Ahorn`, `Linde` or `Acer` and select a species suggestion. Common names have local suggestions. For other names, select the option to search species containing your text.
+- Enter `1026` or `Nr. 1026` and press Enter to search the number on a tree tag. Numbers repeat across Vienna.
+
+Press Arrow Down to focus the first suggestion, Tab to move between suggestions and Enter to select one. Escape in the search field closes the suggestions.
 
 Species and number searches use the current nearby area when one is open. Select **In ganz Wien suchen** after a filtered nearby search to expand it to the city. From the home page they search citywide.
 
 Select **In meiner Nähe** to request location access. Selecting it again stops location tracking. While tracking, moving more than 100 metres starts a new search. Place selection and **Hier suchen** stop tracking so the map does not jump back to your device position.
 
-Green map markers represent returned tree records. Click one to open its details. The blue point marks the search centre. Drag the map and select **Hier suchen** to search within 1 km of its new centre while retaining the active species or number filter. The list below offers the same records for keyboard users, 30 at a time. Zoom controls and touch gestures work on the map; ordinary page scrolling does not zoom it.
+Green map markers represent returned tree records. Click one to open its details. The blue point marks the search centre. Drag the map and select **Hier suchen** to search within 1 km of its new centre while retaining the active species or number filter. The list below offers the same records for keyboard users, 30 at a time. Zoom with the mouse wheel or trackpad over the map, the zoom buttons or touch gestures. Scroll outside the map to move down the page.
 
 Search criteria are part of the URL. Browser history, reloads and copied links restore them. Nearby URLs contain coordinates. Share them only if you intend to share that location.
 
@@ -59,7 +59,7 @@ The app requests a bounding box for nearby searches, calculates Haversine distan
 
 Height and crown diameter are size classes, not exact measurements. The parser converts the city's class codes into ranges. Missing values stay missing. It validates the response with Zod and rejects coordinates outside geographic bounds.
 
-TanStack Query keeps inactive results in memory for 10 minutes. Tree results stay fresh for one minute; place results stay fresh for 10 minutes. Query cancellation stops superseded requests. Automatic retries and refetch-on-window-focus are disabled; the retry button starts a new request. It does not download the whole city dataset, store your location on an application server or use analytics. Location searches send a bounding box to the city's service. Submitted address and landmark queries go to [Photon](https://github.com/komoot/photon), whose public endpoint is `https://photon.komoot.io/api/`. Results are limited to the Vienna area. The app sends no requests while you type. `VITE_GEOCODER_URL` can point to another compatible Photon service.
+TanStack Query keeps inactive results in memory for 10 minutes. Tree results stay fresh for one minute; place results stay fresh for 10 minutes. Query cancellation stops superseded requests. Automatic retries and refetch-on-window-focus are disabled; the retry button starts a new request. It does not download the whole city dataset, store your location on an application server or use analytics. Location searches send a bounding box to the city's service. After a 350 ms typing pause, text queries for place suggestions go to [Photon](https://github.com/komoot/photon), whose public endpoint is `https://photon.komoot.io/api/`. Results are limited to the Vienna area. New input cancels the typing delay, and outdated place suggestions stay hidden. Tree-number inputs do not trigger place requests. `VITE_GEOCODER_URL` can point to another compatible Photon service.
 
 Leaflet displays tiles from `https://tile.openstreetmap.org/{z}/{x}/{y}.png`. The map displays OpenStreetMap attribution and uses normal browser caching. It does not prefetch or download areas for offline use. Photon and OpenStreetMap's public servers have no availability guarantee; larger deployments should use their own or a contracted service. Opening the map sends tile requests for the area you view to OpenStreetMap.
 

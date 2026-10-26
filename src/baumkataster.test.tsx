@@ -79,11 +79,27 @@ afterEach(() => {
 });
 
 describe("Baumkataster", () => {
+  it("suggests tree species without a mode selector", async () => {
+    const { user } = await open("/");
+    expect(screen.queryByLabelText("Suchart")).toBeNull();
+    await user.type(screen.getByLabelText("Suche"), "Aho");
+    await user.click(screen.getByRole("button", { name: "Ahorn Baumart · Acer" }));
+    expect(await screen.findByText('2 Bäume für "Ahorn" in Wien')).toBeDefined();
+    expect(window.location.search).toBe("?art=Ahorn");
+  });
+
+  it("supports keyboard selection and dismissing suggestions", async () => {
+    const { user } = await open("/");
+    await user.type(screen.getByLabelText("Suche"), "Aho{Escape}");
+    expect(screen.queryByRole("button", { name: "Ahorn Baumart · Acer" })).toBeNull();
+    await user.type(screen.getByLabelText("Suche"), "r{ArrowDown}{Enter}");
+    expect(await screen.findByText('2 Bäume für "Ahorn" in Wien')).toBeDefined();
+  });
+
   it("searches a German species name and keeps it in the URL", async () => {
     const fetch = fakeWfs();
     const { user } = await open("/", fetch);
-    await user.selectOptions(screen.getByLabelText("Suchart"), "species");
-    await user.type(screen.getByLabelText("Baumart"), "Ahorn{Enter}");
+    await user.type(screen.getByLabelText("Suche"), "Ahorn{Enter}");
     expect(await screen.findByText('2 Bäume für "Ahorn" in Wien')).toBeDefined();
     expect(window.location.search).toBe("?art=Ahorn");
     expect(fetch).toHaveBeenCalledWith(
@@ -92,7 +108,7 @@ describe("Baumkataster", () => {
     );
   });
 
-  it("finds a landmark on submit and searches trees at the selected place", async () => {
+  it("suggests a landmark while typing and searches trees at the selected place", async () => {
     const geocode = vi.fn<typeof globalThis.fetch>(() =>
       Promise.resolve(
         Response.json({
@@ -113,9 +129,8 @@ describe("Baumkataster", () => {
     );
     vi.stubGlobal("fetch", geocode);
     const { user } = await open("/");
-    await user.type(screen.getByLabelText("Ort oder Adresse"), "Hundertwasserhaus");
+    await user.type(screen.getByLabelText("Suche"), "Hundertwasserhaus");
     expect(geocode).not.toHaveBeenCalled();
-    await user.click(screen.getByRole("button", { name: "Suchen" }));
     await user.click(await screen.findByRole("button", { name: /Hundertwasserhaus Kegelgasse/u }));
     expect(window.location.search).toBe("?nahe=48.20717%2C16.39416");
   });
@@ -158,8 +173,7 @@ describe("Baumkataster", () => {
 
   it("searches a typed Tree number and writes it into the address", async () => {
     const { user } = await open("/");
-    await user.selectOptions(screen.getByLabelText("Suchart"), "number");
-    await user.type(screen.getByLabelText("Baumnummer"), "1026");
+    await user.type(screen.getByLabelText("Suche"), "1026");
     await user.click(screen.getByRole("button", { name: "Suchen" }));
 
     expect(await screen.findByText("2 Bäume mit Nr. 1026")).toBeDefined();
@@ -168,11 +182,10 @@ describe("Baumkataster", () => {
 
   it("refuses a Tree number that can't be on a tag", async () => {
     const { user, fetch } = await open("/");
-    await user.selectOptions(screen.getByLabelText("Suchart"), "number");
-    await user.type(screen.getByLabelText("Baumnummer"), "'; DROP");
+    await user.type(screen.getByLabelText("Suche"), "'; DROP");
     await user.click(screen.getByRole("button", { name: "Suchen" }));
 
-    expect(screen.getByLabelText("Baumnummer").getAttribute("aria-invalid")).toBe("true");
+    expect(screen.getByLabelText("Suche").getAttribute("aria-invalid")).toBe("true");
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -248,7 +261,7 @@ describe("Baumkataster", () => {
     const { user } = await open("/?nummer=1026", fetch);
     expect(await screen.findByText("Der Baumkataster ist gerade nicht erreichbar.")).toBeDefined();
 
-    await user.type(screen.getByLabelText("Baumnummer"), "{Backspace>4}7{Enter}");
+    await user.type(screen.getByLabelText("Suche"), "{Backspace>4}7{Enter}");
     expect(await screen.findByText("2 Bäume mit Nr. 7")).toBeDefined();
     window.history.back();
     expect(await screen.findByText("2 Bäume mit Nr. 1026")).toBeDefined();
