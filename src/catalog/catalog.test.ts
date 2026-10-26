@@ -124,7 +124,7 @@ describe("catalog.lookup limits", () => {
   it("counts features without geometry when deciding the list was cut off", async () => {
     const features = [
       rawTree({ OBJECTID: 1 }, null),
-      ...Array.from({ length: 5_000 }, (_, index) => rawTree({ OBJECTID: index + 2 })),
+      ...Array.from({ length: 20_000 }, (_, index) => rawTree({ OBJECTID: index + 2 })),
     ];
     const { catalog } = catalogAnswering(rawCollection(features));
     const findings = await lookup(catalog, { kind: "treeNumber", treeNumber: treeNumber("1") });
@@ -132,12 +132,12 @@ describe("catalog.lookup limits", () => {
   });
 
   it("says when the Baumkataster had more matches than one request returns", async () => {
-    const features = Array.from({ length: 5_001 }, (_, index) => rawTree({ OBJECTID: index + 1 }));
+    const features = Array.from({ length: 20_001 }, (_, index) => rawTree({ OBJECTID: index + 1 }));
     const { catalog } = catalogAnswering(rawCollection(features));
     const findings = await lookup(catalog, { kind: "treeNumber", treeNumber: treeNumber("1") });
 
     expect(findings.truncated).toBe(true);
-    expect(findings.items).toHaveLength(5_000);
+    expect(findings.items).toHaveLength(20_000);
   });
 });
 

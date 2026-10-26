@@ -5,11 +5,8 @@ import { TREE_SOURCE } from "../trees";
 /** The Search radius of a Nearby search. */
 export const SEARCH_RADIUS_METERS = 1_000;
 
-/**
- * Upper bound on Trees per request. A 1 km box in the densest districts holds a few thousand
- * Trees; the WFS cannot order by distance, so the limit must be above that.
- */
-export const FEATURE_LIMIT = 5_000;
+/** Bound response size while allowing dense 1 km searches to include more than 5,000 trees. */
+export const FEATURE_LIMIT = 20_000;
 
 const cqlString = (value: string): string => `'${value.replaceAll("'", "''")}'`;
 
